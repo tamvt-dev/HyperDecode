@@ -571,6 +571,7 @@ typedef struct {
     const Candidate *cand;
     Plugin *plugin;
     GMutex *results_mutex;
+    GCond *results_cond;
     GList **results;
     volatile gint *pending_tasks;
 } PipelineTask;
@@ -639,9 +640,14 @@ static void pipeline_executor_worker(gpointer data, gpointer user_data) {
     }
 
     volatile gint *pending = task->pending_tasks;
+    GCond *cond = task->results_cond;
+    
     pipeline_task_free(task);
-    if (pending) {
-        g_atomic_int_dec_and_test(pending);
+    
+    if (pending && cond) {
+        if (g_atomic_int_dec_and_test(pending)) {
+            g_cond_signal(cond);
+        }
     }
 }
 
@@ -716,6 +722,8 @@ static GList* prune_and_diversify_beam(GList *candidates, int target_width) {
             g_hash_table_insert(type_counts, (gpointer)last_step, GINT_TO_POINTER(count + 1));
             // Move node from candidates to result
             candidates = g_list_remove_link(candidates, iter);
+            iter->next = NULL; // Đảm bảo cô lập node hoàn toàn tránh rò rỉ
+            iter->prev = NULL;
             result = g_list_concat(result, iter);
             total_added++;
         }
@@ -757,8 +765,11 @@ static GList* execute_planned_pipeline(const Buffer *input, const PipelinePlan *
         GList *new_beam = NULL;
         GList *frozen_beam = NULL;
         GMutex results_mutex;
+        GCond results_cond;
         volatile gint pending_tasks = 0;
+        
         g_mutex_init(&results_mutex);
+        g_cond_init(&results_cond);
         
         // Use global thread pool instead of creating new one
         GThreadPool *pool = g_pipeline_pool;
@@ -790,6 +801,7 @@ static GList* execute_planned_pipeline(const Buffer *input, const PipelinePlan *
                     task->cand = cand;
                     task->plugin = p;
                     task->results_mutex = &results_mutex;
+                    task->results_cond = &results_cond;
                     task->results = &new_beam;
                     task->pending_tasks = &pending_tasks;
                     g_atomic_int_inc(&pending_tasks);
@@ -802,10 +814,12 @@ static GList* execute_planned_pipeline(const Buffer *input, const PipelinePlan *
                     }
                 }
             }
-            // Wait for all locally dispatched tasks to complete
+            // Wait for all locally dispatched tasks to complete using GCond instead of busy wait
+            g_mutex_lock(&results_mutex);
             while (g_atomic_int_get(&pending_tasks) > 0) {
-                g_usleep(100); // reduced from 1000us to 100us for responsiveness
+                g_cond_wait(&results_cond, &results_mutex);
             }
+            g_mutex_unlock(&results_mutex);
         } else {
             // Fallback to sequential processing if pool unavailable
 
@@ -867,6 +881,7 @@ static GList* execute_planned_pipeline(const Buffer *input, const PipelinePlan *
             }
         }
         g_mutex_clear(&results_mutex);
+        g_cond_clear(&results_cond);
 
         new_beam = dedupe_candidate_results(new_beam, visited);
         new_beam = g_list_concat(new_beam, frozen_beam);
