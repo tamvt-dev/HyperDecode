@@ -2,23 +2,36 @@
 #include <glib.h>
 #include <string.h>
 
+#define XXH_INLINE_ALL
+#include "third_party/xxhash.h"
+
 Buffer buffer_new(const unsigned char *data, size_t len) {
-    Buffer buf = { NULL, 0 };
+    Buffer buf = { NULL, NULL, 0 };
     if (!data || len == 0) return buf;
-    // g_memdup2 is the modern, safe version of g_memdup
-    buf.data = (unsigned char*)g_memdup2(data, len);
+    
+    SharedBuffer *shared = (SharedBuffer*)g_malloc(sizeof(SharedBuffer) + len);
+    shared->ref_count = 1;
+    shared->capacity = len;
+    memcpy(shared->data, data, len);
+    
+    buf.shared = shared;
+    buf.data = shared->data;
     buf.len = len;
     return buf;
 }
 
 Buffer buffer_clone(const Buffer *src) {
-    if (!src || !src->data) return (Buffer){ NULL, 0 };
-    return buffer_new(src->data, src->len);
+    if (!src || !src->shared || !src->data) return (Buffer){ NULL, NULL, 0 };
+    g_atomic_int_inc(&src->shared->ref_count);
+    return *src;
 }
 
 void buffer_free(Buffer *buf) {
-    if (buf) {
-        g_free(buf->data);
+    if (buf && buf->shared) {
+        if (g_atomic_int_dec_and_test(&buf->shared->ref_count)) {
+            g_free(buf->shared);
+        }
+        buf->shared = NULL;
         buf->data = NULL;
         buf->len = 0;
     }
@@ -26,21 +39,15 @@ void buffer_free(Buffer *buf) {
 
 gboolean buffer_equal(const Buffer *a, const Buffer *b) {
     if (!a || !b) return FALSE;
-    if (a->data == b->data) return TRUE; // Fast path: same memory block
+    if (a->data == b->data && a->len == b->len) return TRUE; // Fast path
     if (a->len != b->len) return FALSE;
     if (a->len == 0) return TRUE;
     return memcmp(a->data, b->data, a->len) == 0;
 }
 
-guint32 buffer_hash_fast(const Buffer *buf) {
+guint64 buffer_hash_fast(const Buffer *buf) {
     if (!buf || !buf->data || buf->len == 0) return 0;
-    
-    // DJB2 Hash implementation
-    guint32 hash = 5381;
-    for (size_t i = 0; i < buf->len; i++) {
-        hash = ((hash << 5) + hash) + buf->data[i];
-    }
-    return hash;
+    return XXH64(buf->data, buf->len, 0);
 }
 
 char* buffer_key(const Buffer *buf) {

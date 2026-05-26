@@ -649,12 +649,17 @@ static GList* dedupe_candidate_results(GList *candidates, GHashTable *visited) {
     GList *deduped = NULL;
     for (GList *iter = candidates; iter; iter = iter->next) {
         Candidate *cand = (Candidate*)iter->data;
-        guint32 hash = buffer_hash_fast(&cand->buf);
-        if (g_hash_table_contains(visited, GUINT_TO_POINTER(hash))) {
+        guint64 hash = buffer_hash_fast(&cand->buf);
+        
+        gint64 *hash_key = g_new(gint64, 1);
+        *hash_key = hash;
+        
+        if (g_hash_table_contains(visited, hash_key)) {
+            g_free(hash_key);
             candidate_free(cand);
             continue;
         }
-        g_hash_table_add(visited, GUINT_TO_POINTER(hash));
+        g_hash_table_add(visited, hash_key);
         deduped = g_list_prepend(deduped, cand);
     }
     g_list_free(candidates);
@@ -729,7 +734,7 @@ static GList* execute_planned_pipeline(const Buffer *input, const PipelinePlan *
     // Initialize global thread pool once
     init_pipeline_pool();
 
-    GHashTable *visited = g_hash_table_new(g_direct_hash, g_direct_equal);
+    GHashTable *visited = g_hash_table_new_full(g_int64_hash, g_int64_equal, g_free, NULL);
     GList *beam = NULL;
     GList *all_seen = NULL;
 
@@ -741,7 +746,10 @@ static GList* execute_planned_pipeline(const Buffer *input, const PipelinePlan *
     init->meta = g_strdup("");
     beam = g_list_append(beam, init);
     all_seen = g_list_append(all_seen, candidate_clone(init));
-    g_hash_table_add(visited, GUINT_TO_POINTER(buffer_hash_fast(&init->buf)));
+    
+    gint64 *init_hash = g_new(gint64, 1);
+    *init_hash = buffer_hash_fast(&init->buf);
+    g_hash_table_add(visited, init_hash);
 
     int current_beam_width = plan->beam_width;
 

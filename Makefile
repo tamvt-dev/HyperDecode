@@ -9,18 +9,21 @@ GTK_LIBS = $(shell $(PKG_CONFIG) --libs gtk+-3.0 glib-2.0 2>/dev/null)
 CFLAGS += $(GTK_CFLAGS)
 LDFLAGS += $(GTK_LIBS)
 
-SRCDIR = src
-INCDIR = include
+SRCDIR = core/src
+INCDIR = core/include
 UIDIR = ui
 OBJDIR = build/obj
 BINDIR = build/bin
 
 CORE_SRC = $(SRCDIR)/core.c $(SRCDIR)/decoder.c $(SRCDIR)/encoder.c \
            $(SRCDIR)/plugin.c $(SRCDIR)/lru_cache.c $(SRCDIR)/logging.c \
-           $(SRCDIR)/errors.c $(SRCDIR)/crash_handler.c $(SRCDIR)/theme_manager.c
+           $(SRCDIR)/errors.c $(SRCDIR)/crash_handler.c $(SRCDIR)/theme_manager.c \
+           $(SRCDIR)/buffer.c $(SRCDIR)/pipeline.c $(SRCDIR)/score.c \
+           $(SRCDIR)/decoders.c $(SRCDIR)/recipe.c \
+           $(SRCDIR)/third_party/xxhash.c
 PLUGIN_SRC = $(wildcard $(SRCDIR)/plugins/*.c)
 UI_SRC = $(UIDIR)/gui.c
-MAIN_SRC = $(SRCDIR)/main.c
+MAIN_SRC = cli/main.c
 
 SOURCES = $(CORE_SRC) $(PLUGIN_SRC) $(UI_SRC) $(MAIN_SRC)
 OBJECTS = $(SOURCES:%.c=$(OBJDIR)/%.o)

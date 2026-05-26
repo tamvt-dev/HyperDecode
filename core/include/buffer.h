@@ -4,7 +4,15 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef struct SharedBuffer {
+    gint ref_count;
+    size_t capacity;
+    unsigned char data[];
+} SharedBuffer;
+
 typedef struct {
+    SharedBuffer *shared;
     unsigned char *data;
     size_t len;
 } Buffer;
@@ -15,8 +23,8 @@ void buffer_free(Buffer *buf);
 gboolean buffer_equal(const Buffer *a, const Buffer *b);
 char* buffer_key(const Buffer *buf);
 
-// Fast DJB2-like hash for deduplication
-guint32 buffer_hash_fast(const Buffer *buf);
+// Fast 64-bit hash for deduplication
+guint64 buffer_hash_fast(const Buffer *buf);
 
 #ifdef __cplusplus
 }
