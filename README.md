@@ -108,13 +108,6 @@ When running with the `--trace` flag, HyperDecode reveals its internal decision-
 - [ ] **Scripting Plugin**: Lua & Python support for custom transition functions.
 
 ---
-## 📢 Project Status
-
-⚠️ HyperDecode is temporarily paused due to academic exams.  
-Development will resume after [June 2026].
-
-Core engine is stable and future features (Hunter Mode, UI integration) are planned.
----
 
 **Developed with ❤️ by HyperDecode Team.**  
 [Repository](https://github.com/tamvt-dev/HyperDecode) • [Report Issue](https://github.com/tamvt-dev/HyperDecode/issues)
