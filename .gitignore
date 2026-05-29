@@ -53,3 +53,35 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# VS Code and IDEs
+.vscode/
+.idea/
+*.suo
+*.user
+*.user.user
+*.suo
+*.sln
+*.vcxproj
+*.filters
+
+# Qt Creator and QMake auto-generated files
+.qmake.stash
+Makefile
+Makefile.Debug
+Makefile.Release
+ui_*.h
+moc_*.cpp
+qrc_*.cpp
+object_script.*
+*.pro.user
+
+# Local Build Outputs and Binary Binaries
+cli/bin/
+cli/output/
+core/build/
+build/
+output/
+debug/
+release/
+*.zip

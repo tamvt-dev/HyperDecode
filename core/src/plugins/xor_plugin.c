@@ -10,7 +10,7 @@
 // Core XOR logic (Buffer-based)
 // -------------------------------------------------------------------
 static Buffer xor_transform(Buffer in, unsigned char key) {
-    Buffer out = { NULL, 0 };
+    Buffer out = { NULL, NULL, 0 };
     if (!in.data || in.len == 0) return out;
     
     unsigned char *res = g_malloc(in.len);
@@ -115,14 +115,15 @@ static gboolean xor_detect(Buffer in) {
 static Buffer xor_decode_single(Buffer in) {
     // Single decode uses the best found key from a quick scan
     GList *multi = xor_decode_multi(in);
-    if (!multi) return (Buffer){NULL, 0};
+    if (!multi) return (Buffer){NULL, NULL, 0};
     
     Buffer *best = (Buffer*)multi->data;
     Buffer out = buffer_clone(best);
     
     // Clean up
     for (GList *iter = multi; iter; iter = iter->next) {
-        buffer_box_free((Buffer*)iter->data);
+        buffer_free((Buffer*)iter->data);
+        g_free(iter->data);
     }
     g_list_free(multi);
     

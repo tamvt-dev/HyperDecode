@@ -60,7 +60,7 @@ static gboolean base64_detect_buffer(Buffer in) {
 
 // --- Buffer-based wrappers ---
 static Buffer base64_decode_buffer(Buffer in) {
-    Buffer out = { NULL, 0 };
+    Buffer out = { NULL, NULL, 0 };
     if (!in.data || in.len == 0) return out;
 
     char *input_str = g_strndup((const char*)in.data, in.len);
@@ -91,7 +91,7 @@ static Buffer base64_decode_buffer(Buffer in) {
 }
 
 static Buffer base64_encode_buffer(Buffer in) {
-    Buffer out = { NULL, 0 };
+    Buffer out = { NULL, NULL, 0 };
     if (!in.data || in.len == 0) return out;
 
     char *result_str = base64_encode_raw(in.data, in.len);

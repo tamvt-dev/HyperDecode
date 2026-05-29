@@ -17,6 +17,9 @@ extern void atbash_plugin_init(void);
 extern void caesar_plugin_init(void);
 extern void xor_plugin_init(void);
 extern void scramble_plugin_init(void);
+extern void aes_plugin_init(void);
+extern void gzip_plugin_init(void);
+extern void sha256_plugin_init(void);
 
 typedef struct {
     LRUCache *cache;
@@ -133,6 +136,9 @@ static void core_init_once_func(void) {
     caesar_plugin_init();
     xor_plugin_init();
     scramble_plugin_init();
+    aes_plugin_init();
+    gzip_plugin_init();
+    sha256_plugin_init();
 }
 
 gboolean core_init(void) {

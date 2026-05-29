@@ -1,15 +1,15 @@
 @echo off
 setlocal
 
-set "MSYS_BIN=C:\msys64\ucrt64\bin"
+set "MSYS_BIN=C:\msys64\mingw64\bin"
 set "PATH=%MSYS_BIN%;%PATH%"
 
 if not exist bin mkdir bin
 
 gcc -Wall -Wextra -O2 -Wno-cast-function-type ^
   -I..\core\include ^
-  -IC:/msys64/ucrt64/include/glib-2.0 ^
-  -IC:/msys64/ucrt64/lib/glib-2.0/include ^
+  -IC:/msys64/mingw64/include/glib-2.0 ^
+  -IC:/msys64/mingw64/lib/glib-2.0/include ^
   main.c ^
   ..\core\src\core.c ^
   ..\core\src\decoder.c ^
@@ -22,17 +22,23 @@ gcc -Wall -Wextra -O2 -Wno-cast-function-type ^
   ..\core\src\score.c ^
   ..\core\src\buffer.c ^
   ..\core\src\pipeline.c ^
-  ..\core\plugins\atbash_plugin.c ^
-  ..\core\plugins\base64_plugin.c ^
-  ..\core\plugins\caesar_plugin.c ^
-  ..\core\plugins\rot13_plugin.c ^
-  ..\core\plugins\scramble_plugin.c ^
-  ..\core\plugins\url_plugin.c ^
-  ..\core\plugins\xor_plugin.c ^
-  -LC:/msys64/ucrt64/lib ^
+  ..\core\src\plugins\aes_plugin.c ^
+  ..\core\src\plugins\atbash_plugin.c ^
+  ..\core\src\plugins\base64_plugin.c ^
+  ..\core\src\plugins\caesar_plugin.c ^
+  ..\core\src\plugins\gzip_plugin.c ^
+  ..\core\src\plugins\rot13_plugin.c ^
+  ..\core\src\plugins\scramble_plugin.c ^
+  ..\core\src\plugins\sha256_plugin.c ^
+  ..\core\src\plugins\url_plugin.c ^
+  ..\core\src\plugins\xor_plugin.c ^
+  -LC:/msys64/mingw64/lib ^
   -lglib-2.0 ^
   -lintl ^
   -liconv ^
+  -lssl ^
+  -lcrypto ^
+  -lz ^
   -o bin\hyperdecode.exe
 
 if errorlevel 1 (

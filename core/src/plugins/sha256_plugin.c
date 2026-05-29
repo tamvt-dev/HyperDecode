@@ -3,6 +3,7 @@
 #include <openssl/sha.h>
 #include <glib.h>
 #include <stdio.h>
+#include <string.h>
 
 static gboolean sha256_detect(Buffer in) {
     return in.len == 64 && g_ascii_isxdigit(in.data[0]); // hex digest
@@ -21,7 +22,9 @@ static Buffer sha256_encode(Buffer in) {
     Buffer out;
     out.len = 64;
     out.data = g_malloc(64);
-    memcpy(out.data, hex, 64);
+    if (out.data) {
+        memcpy(out.data, hex, 64);
+    }
     return out;
 }
 

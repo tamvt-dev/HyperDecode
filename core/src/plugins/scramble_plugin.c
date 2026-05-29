@@ -144,7 +144,7 @@ static gboolean plugin_detect(const char *input) {
 // Buffer-based wrappers (for plugin API)
 // -------------------------------------------------------------------
 static Buffer scramble_decode_buffer(Buffer in) {
-    Buffer out = { NULL, 0 };
+    Buffer out = { NULL, NULL, 0 };
     if (!in.data || in.len == 0) return out;
     char *input_str = g_malloc(in.len + 1);
     memcpy(input_str, in.data, in.len);
@@ -159,7 +159,7 @@ static Buffer scramble_decode_buffer(Buffer in) {
 }
 
 static Buffer scramble_encode_buffer(Buffer in) {
-    Buffer out = { NULL, 0 };
+    Buffer out = { NULL, NULL, 0 };
     if (!in.data || in.len == 0) return out;
     char *input_str = g_malloc(in.len + 1);
     memcpy(input_str, in.data, in.len);

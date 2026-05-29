@@ -9,9 +9,9 @@ QMAKE_CXX = g++
 
 # Include paths
 INCLUDEPATH += ../core/include
-INCLUDEPATH += C:/msys64/ucrt64/include/glib-2.0
-INCLUDEPATH += C:/msys64/ucrt64/lib/glib-2.0/include
-INCLUDEPATH += C:/msys64/ucrt64/include/json-glib-1.0
+INCLUDEPATH += C:/msys64/mingw64/include/glib-2.0
+INCLUDEPATH += C:/msys64/mingw64/lib/glib-2.0/include
+INCLUDEPATH += C:/msys64/mingw64/include/json-glib-1.0
 
 # Core sources
 SOURCES += \
@@ -30,16 +30,16 @@ SOURCES += \
 
 # Plugins
 SOURCES += \
-    ../core/plugins/aes_plugin.c \
-    ../core/plugins/atbash_plugin.c \
-    ../core/plugins/base64_plugin.c \
-    ../core/plugins/caesar_plugin.c \
-    ../core/plugins/gzip_plugin.c \
-    ../core/plugins/rot13_plugin.c \
-    ../core/plugins/scramble_plugin.c \
-    ../core/plugins/sha256_plugin.c \
-    ../core/plugins/url_plugin.c \
-    ../core/plugins/xor_plugin.c
+    ../core/src/plugins/aes_plugin.c \
+    ../core/src/plugins/atbash_plugin.c \
+    ../core/src/plugins/base64_plugin.c \
+    ../core/src/plugins/caesar_plugin.c \
+    ../core/src/plugins/gzip_plugin.c \
+    ../core/src/plugins/rot13_plugin.c \
+    ../core/src/plugins/scramble_plugin.c \
+    ../core/src/plugins/sha256_plugin.c \
+    ../core/src/plugins/url_plugin.c \
+    ../core/src/plugins/xor_plugin.c
 
 # Qt sources
 SOURCES += \
@@ -74,8 +74,8 @@ RC_ICONS = icons/app.ico
 # Silence GLib function-pointer cast warnings on MinGW.
 QMAKE_CFLAGS += -Wno-cast-function-type
 
-# Link GLib from the local MSYS2 UCRT64 environment.
-LIBS += -LC:/msys64/ucrt64/lib -lglib-2.0 -lgobject-2.0 -lintl -liconv -ljson-glib-1.0
+# Link GLib from the local MSYS2 mingw64 environment.
+LIBS += -LC:/msys64/mingw64/lib -lglib-2.0 -lgobject-2.0 -lintl -liconv -ljson-glib-1.0
 
 # Link OpenSSL and zlib for crypto plugins
 LIBS += -lssl -lcrypto -lz

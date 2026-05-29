@@ -7,7 +7,7 @@
 
 // --- Buffer-based core logic ---
 static Buffer atbash_transform(Buffer in) {
-    Buffer out = { NULL, 0 };
+    Buffer out = { NULL, NULL, 0 };
     if (!in.data || in.len == 0) return out;
 
     unsigned char *res = g_malloc(in.len);

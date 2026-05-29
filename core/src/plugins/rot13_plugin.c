@@ -36,7 +36,7 @@ static gboolean rot13_detect_str(const char *input) {
 }
 
 static Buffer rot13_decode_buffer(Buffer in) {
-    Buffer out = { NULL, 0 };
+    Buffer out = { NULL, NULL, 0 };
     if (!in.data || in.len == 0) return out;
     char *input_str = g_malloc(in.len + 1);
     memcpy(input_str, in.data, in.len);
@@ -51,7 +51,7 @@ static Buffer rot13_decode_buffer(Buffer in) {
 }
 
 static Buffer rot13_encode_buffer(Buffer in) {
-    Buffer out = { NULL, 0 };
+    Buffer out = { NULL, NULL, 0 };
     if (!in.data || in.len == 0) return out;
     char *input_str = g_malloc(in.len + 1);
     memcpy(input_str, in.data, in.len);

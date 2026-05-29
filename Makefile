@@ -1,7 +1,7 @@
 CC = gcc
 PKG_CONFIG = pkg-config
 CFLAGS = -Wall -Wextra -pthread -DVERSION=\"2.0.0\" -D_GNU_SOURCE -O2
-LDFLAGS = -lm
+LDFLAGS = -lm -lssl -lcrypto -lz
 
 GTK_CFLAGS = $(shell $(PKG_CONFIG) --cflags gtk+-3.0 glib-2.0 2>/dev/null)
 GTK_LIBS = $(shell $(PKG_CONFIG) --libs gtk+-3.0 glib-2.0 2>/dev/null)

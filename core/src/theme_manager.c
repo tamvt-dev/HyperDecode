@@ -1,5 +1,6 @@
 #include "../include/theme_manager.h"
 #include "../include/logging.h"
+#include <gtk/gtk.h>
 #include <glib.h>
 #include <stdio.h>
 

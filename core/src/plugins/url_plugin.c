@@ -7,7 +7,7 @@
 
 // --- Performance: Buffer-based In-place Style Decoder ---
 static Buffer url_decode_buffer(Buffer in) {
-    Buffer out = { NULL, 0 };
+    Buffer out = { NULL, NULL, 0 };
     if (!in.data || in.len == 0) return out;
 
     unsigned char *res = g_malloc(in.len);
@@ -50,7 +50,7 @@ static Buffer url_decode_buffer(Buffer in) {
 }
 
 static Buffer url_encode_buffer(Buffer in) {
-    Buffer out = { NULL, 0 };
+    Buffer out = { NULL, NULL, 0 };
     if (!in.data || in.len == 0) return out;
 
     GString *result = g_string_sized_new(in.len * 3);
@@ -59,7 +59,7 @@ static Buffer url_encode_buffer(Buffer in) {
         if (g_ascii_isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
             g_string_append_c(result, (char)c);
         } else if (c == ' ') {
-            g_string_append_c(result, "+");
+            g_string_append_c(result, '+');
         } else {
             g_string_append_printf(result, "%%%02X", c);
         }
