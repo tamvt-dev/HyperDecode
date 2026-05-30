@@ -104,7 +104,7 @@ When running with the `--trace` flag, HyperDecode reveals its internal decision-
 
 ## 🛤️ Roadmap
 - [ ] **ML Scoring Core**: Integrate *Tinygrad* or *ONNX Runtime Core* for research-grade scoring.
-- [ ] **Adaptive Beam Width**: Dynamically adjust search breadth based on data confidence.
+- [x] **Adaptive Beam Width**: Dynamically adjust search breadth based on data confidence.
 - [ ] **Scripting Plugin**: Lua & Python support for custom transition functions.
 
 ---

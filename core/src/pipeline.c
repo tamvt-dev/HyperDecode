@@ -678,24 +678,74 @@ static int adaptive_beam_width(GList *candidates, int base_width) {
     if (!candidates) return base_width;
     size_t count = g_list_length(candidates);
     if (count < 2) return base_width;
-    
-    Candidate *top = (Candidate*)candidates->data;
-    
-    // Target confidence: if we have a very high score, we narrow focus
-    if (top->score > 1.2) return MAX(base_width / 2, 5);
-    if (top->score > 0.9) return MAX(base_width - 2, 8);
 
-    // If top candidates are all mediocre and close in score, widen search to find more paths
-    Candidate *last_sampled = (Candidate*)g_list_nth_data(candidates, MIN(count - 1, (size_t)base_width - 1));
-    if (last_sampled) {
-        double range = top->score - last_sampled->score;
-        if (range < 0.1) return MIN(base_width * 2, 40); // Widen significantly
+    // Compute score stats over top-N candidates to decide beam width.
+    size_t sample_n = MIN(count, (size_t)MAX(base_width, 10));
+    double mean = 0.0;
+    size_t i = 0;
+
+    // First pass: mean
+    for (GList *iter = candidates; iter && i < sample_n; iter = iter->next, i++) {
+        Candidate *cand = (Candidate*)iter->data;
+        mean += cand->score;
     }
-    
+    mean /= (double)sample_n;
+
+    // Second pass: variance
+    double var = 0.0;
+    i = 0;
+    for (GList *iter = candidates; iter && i < sample_n; iter = iter->next, i++) {
+        Candidate *cand = (Candidate*)iter->data;
+        double d = cand->score - mean;
+        var += d * d;
+    }
+    var /= (double)sample_n;
+    double stddev = sqrt(var);
+
+    Candidate *top = (Candidate*)candidates->data;
+
+    // Heuristic rules:
+    // - very confident (high top score, low spread) => narrow beam
+    // - uncertain (high spread) => widen beam for diversity
+    if (top->score > 1.2 && stddev < 0.25) return MAX(base_width / 2, 5);
+    if (top->score > 0.9 && stddev < 0.35) return MAX(base_width - 2, 8);
+
+    // If distribution is tight => moderate shrink
+    if (stddev < 0.18) return MAX(base_width - 1, 6);
+
+    // If distribution is wide => widen significantly
+    if (stddev > 0.55) return MIN(base_width * 2, 50);
+    if (stddev > 0.35) return MIN(base_width + 6, 45);
+
     return base_width;
 }
 
-// Pruning strategy that maintains diversity of transform types in the beam
+
+// Map last_step string to a canonical "transform family" for diversity control.
+// This prevents beam from being dominated by one family (e.g., many Caesar variants).
+static const char* transform_family_from_step(const char *step_name) {
+    if (!step_name) return "unknown";
+    if (g_strcmp0(step_name, "Base64") == 0) return "Base64";
+    if (g_strcmp0(step_name, "Hex") == 0) return "Hex";
+    if (g_strcmp0(step_name, "Binary") == 0) return "Binary";
+    if (g_strcmp0(step_name, "Morse") == 0) return "Morse";
+    if (g_strcmp0(step_name, "URL") == 0) return "URL";
+
+    // Exploratory / letter-mutation family
+    if (g_strcmp0(step_name, "ROT13") == 0 ||
+        g_strcmp0(step_name, "Caesar") == 0 ||
+        g_strcmp0(step_name, "Atbash") == 0) {
+        return "CaesarRotAtbash";
+    }
+
+    if (g_strcmp0(step_name, "XOR") == 0) return "XOR";
+    if (g_strcmp0(step_name, "Scramble") == 0) return "Scramble";
+
+    // Fallback: use raw step_name, but clamp to avoid metadata suffix mismatch.
+    return step_name;
+}
+
+// Pruning strategy that maintains diversity of transform families in the beam
 static GList* prune_and_diversify_beam(GList *candidates, int target_width) {
     if (!candidates) return NULL;
     if ((int)g_list_length(candidates) <= target_width) return candidates;
@@ -703,38 +753,46 @@ static GList* prune_and_diversify_beam(GList *candidates, int target_width) {
     GList *result = NULL;
     GHashTable *type_counts = g_hash_table_new(g_str_hash, g_str_equal);
     int total_added = 0;
-    
-    // Max candidates per specific transform type (e.g. don't keep 20 variants of Caesar)
-    int max_per_type = MAX(2, target_width / 4);
+
+    // Max candidates per canonical family.
+    // Slightly higher than before to avoid losing nested structured encodings.
+    int max_per_type = MAX(2, target_width / 3);
 
     GList *next;
     for (GList *iter = candidates; iter && total_added < target_width; iter = next) {
         next = iter->next;
         Candidate *cand = (Candidate*)iter->data;
+
         const char *last_step = candidate_last_step(cand);
-        
-        if (!last_step) last_step = "unknown";
-        
-        int count = GPOINTER_TO_INT(g_hash_table_lookup(type_counts, last_step));
-        
-        // Keep candidate if it's high quality or if its type isn't over-represented
-        if (cand->score > 1.0 || count < max_per_type) {
-            g_hash_table_insert(type_counts, (gpointer)last_step, GINT_TO_POINTER(count + 1));
+        const char *family = transform_family_from_step(last_step);
+        if (!family) family = "unknown";
+
+        int count = GPOINTER_TO_INT(g_hash_table_lookup(type_counts, family));
+
+        // Keep candidate if it's high quality or if its family isn't over-represented.
+        // Also allow 1 extra slot for top candidates.
+        int family_capacity = max_per_type;
+        if (cand->score > 1.2) family_capacity = max_per_type + 1;
+
+        if (cand->score > 1.0 || count < family_capacity) {
+            g_hash_table_insert(type_counts, (gpointer)family, GINT_TO_POINTER(count + 1));
+
             // Move node from candidates to result
             candidates = g_list_remove_link(candidates, iter);
-            iter->next = NULL; // Đảm bảo cô lập node hoàn toàn tránh rò rỉ
+            iter->next = NULL;
             iter->prev = NULL;
             result = g_list_concat(result, iter);
             total_added++;
         }
     }
-    
+
     // Clean up remaining candidates
     g_list_free_full(candidates, (GDestroyNotify)candidate_free);
     g_hash_table_destroy(type_counts);
-    
+
     return result;
 }
+
 
 static GList* execute_planned_pipeline(const Buffer *input, const PipelinePlan *plan) {
     if (!input || !input->data || input->len == 0 || !plan) return NULL;
